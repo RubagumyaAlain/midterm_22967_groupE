@@ -33,6 +33,10 @@ public class StaffAdministration {
     @Column(nullable = false, unique = true)
     private String email;
 
+    @JsonIgnore
+    @Column
+    private String passwordHash;
+
     @Column(nullable = false)
     private String provinceCode;
 
@@ -85,6 +89,14 @@ public class StaffAdministration {
 
     public String getProvinceCode() {
         return provinceCode;
+    }
+
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
     }
 
     public void setProvinceCode(String provinceCode) {

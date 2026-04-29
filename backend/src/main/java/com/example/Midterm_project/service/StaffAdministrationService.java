@@ -1,16 +1,23 @@
 package com.example.Midterm_project.service;
 
 import org.springframework.stereotype.Service;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
+import com.example.Midterm_project.dto.AdminLoginRequest;
+import com.example.Midterm_project.dto.AdminLoginResponse;
 import com.example.Midterm_project.dto.CreateAdministrationRequest;
 import com.example.Midterm_project.dto.CreateLocationRequest;
 import com.example.Midterm_project.entity.StaffAdministration;
+import com.example.Midterm_project.exception.BadRequestException;
 import com.example.Midterm_project.exception.DuplicateResourceException;
 import com.example.Midterm_project.exception.ResourceNotFoundException;
 import com.example.Midterm_project.repository.StaffAdministrationRepository;
 
 @Service
 public class StaffAdministrationService {
+
+    private static final PasswordEncoder PASSWORD_ENCODER = new BCryptPasswordEncoder();
 
     private final StaffAdministrationRepository staffAdministrationRepository;
 
@@ -56,11 +63,39 @@ public class StaffAdministrationService {
         return staffAdministrationRepository.save(administrator);
     }
 
+    public AdminLoginResponse authenticate(AdminLoginRequest request) {
+        if (!"ADMIN".equalsIgnoreCase(request.role())) {
+            throw new BadRequestException("Only ADMIN role can access the dashboard.");
+        }
+
+        StaffAdministration administrator = staffAdministrationRepository.findByEmailIgnoreCase(request.email())
+                .orElseThrow(() -> new BadRequestException("Invalid email or password."));
+
+        if (!isPasswordValid(administrator, request.password())) {
+            throw new BadRequestException("Invalid email or password.");
+        }
+
+        return new AdminLoginResponse(
+                administrator.getId(),
+                administrator.getFullName(),
+                administrator.getEmail(),
+                "ADMIN");
+    }
+
     private void applyRequest(StaffAdministration administrator, CreateAdministrationRequest request) {
         administrator.setAdminCode(request.adminCode());
         administrator.setFullName(request.fullName());
         administrator.setEmail(request.email());
+        administrator.setPasswordHash(PASSWORD_ENCODER.encode(request.password()));
         applyLocation(administrator, request.location());
+    }
+
+    private boolean isPasswordValid(StaffAdministration administrator, String rawPassword) {
+        String storedHash = administrator.getPasswordHash();
+        if (storedHash == null || storedHash.isBlank()) {
+            return administrator.getAdminCode() != null && administrator.getAdminCode().equals(rawPassword);
+        }
+        return PASSWORD_ENCODER.matches(rawPassword, storedHash);
     }
 
     private void applyLocation(StaffAdministration administrator, CreateLocationRequest location) {

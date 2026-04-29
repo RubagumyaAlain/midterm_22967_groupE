@@ -9,5 +9,6 @@ public record CreateAdministrationRequest(
         @NotBlank(message = "Admin code is required") String adminCode,
         @NotBlank(message = "Full name is required") String fullName,
         @Email(message = "Email format is invalid") @NotBlank(message = "Email is required") String email,
+        @NotBlank(message = "Password is required") String password,
         @Valid @NotNull(message = "Location is required") CreateLocationRequest location) {
 }
